@@ -1,2 +1,18 @@
-# Korea_History_Ability_Test-KHAT-
-"This application was developed targeting a Level 2 pass on the Korea History Ability Test (KHAT)."
+# 한국사능력검정시험(KHAT) 2급 합격 마스터
+
+한국사능력검정시험 심화(2급) 대비 학습 프로젝트 — 멀티 에이전트로 제작한 모의고사 5회·250문항·해설·오답노트 설치형 웹앱(PWA) + 학습 자료.
+
+## 구성
+- `docs/` — 설치형 웹앱(PWA). GitHub Pages로 배포되는 폴더.
+- `study-materials/` — 모의고사·해설·문제은행(13영역)·실전 워크북·D-7 개념 요약 마크다운.
+- `agents/` — 자료를 생성한 13개 영역 전문 에이전트 + 검수 코디네이터 정의.
+- `한능검2급-앱-단일파일.html` — 서버 없이 더블클릭으로 실행되는 단일 파일 앱.
+
+## 웹앱 배포 (GitHub Pages)
+1. **Settings → Pages**
+2. **Source: Deploy from a branch**
+3. **Branch: `main`**, 폴더 **`/docs`** → **Save**
+4. 1~2분 뒤 `https://lsk30323.github.io/Korea_History_Ability_Test-KHAT-/` 접속 → 홈 화면에 추가
+
+## 기능
+모의고사 응시·80분 타이머·자동채점·급환산 / 문항별 해설 / 오답노트(자동 저장) / 영역 랜덤 연습 / 개념·D-7 요약 / 다크모드 / 오프라인 지원.
