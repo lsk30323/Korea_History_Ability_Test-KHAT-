@@ -1,0 +1,32 @@
+{
+  "name": "korea_history_ability_test-khat-",
+  "version": "1.0.0",
+  "description": "한국사능력검정시험 심화(2급) 대비 학습 프로젝트 — 멀티 에이전트로 제작한 모의고사 5회·250문항·해설·오답노트 설치형 웹앱(PWA) + 학습 자료.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "sync": "cap sync android",
+    "icons": "capacitor-assets generate --android --iconBackgroundColor #f7f3ec --iconBackgroundColorDark #1e3a5f",
+    "open:android": "cap open android",
+    "build:aab": "cap sync android && cd android && ./gradlew bundleRelease",
+    "build:apk": "cap sync android && cd android && ./gradlew assembleRelease",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:44225/git/lsk30323/Korea_History_Ability_Test-KHAT-"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}

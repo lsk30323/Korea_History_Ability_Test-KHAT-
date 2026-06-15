@@ -1,0 +1,18 @@
+# Node / Capacitor tooling
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+*.aab
+*.apk
+
+# Signing — NEVER commit keystores or their passwords
+*.jks
+*.keystore
+keystore.properties
+
+# OS
+.DS_Store
+Thumbs.db
