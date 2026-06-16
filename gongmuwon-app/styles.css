@@ -65,4 +65,14 @@ button:disabled{opacity:.5; cursor:default}
 .review-item .ans{font-size:14px}
 .review-item .ans .yours{color:var(--no)}
 .review-item .ans .right{color:var(--ok)}
+.stat-row{margin:14px 0}
+.stat-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; font-size:14px}
+.stat-area{font-weight:600}
+.stat-num{color:var(--muted); font-size:13px}
+.stat-bar{height:10px; background:var(--line); border-radius:999px; overflow:hidden}
+.stat-fill{height:100%; border-radius:999px}
+.stat-fill.low{background:var(--no)}
+.stat-fill.mid{background:var(--gold)}
+.stat-fill.high{background:var(--ok)}
+.stat-total{margin-top:18px; padding-top:14px; border-top:1px solid var(--line); font-weight:700; color:var(--navy)}
 .foot{max-width:720px; margin:0 auto; padding:20px 16px 40px; color:var(--muted); font-size:12px; text-align:center}

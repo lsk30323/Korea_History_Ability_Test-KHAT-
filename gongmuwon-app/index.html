@@ -26,6 +26,11 @@
       </label>
 
       <label class="field">
+        <span>회차 선택</span>
+        <select id="round"><option value="">전체 회차</option></select>
+      </label>
+
+      <label class="field">
         <span>문항 수</span>
         <select id="count">
           <option value="10">10문항</option>
@@ -51,6 +56,12 @@
       <h2>오답노트</h2>
       <p class="muted" id="wrongInfo">틀린 문항이 여기에 모입니다.</p>
       <button id="viewWrongBtn" class="ghost">오답노트 보기</button>
+    </div>
+
+    <div class="card">
+      <h2>학습 통계</h2>
+      <p class="muted" id="statSummary">아직 푼 문항이 없습니다.</p>
+      <button id="viewStatsBtn" class="ghost">과목별 정답률 보기</button>
     </div>
   </section>
 
@@ -86,6 +97,18 @@
       </div>
     </div>
     <div id="reviewList"></div>
+  </section>
+
+  <!-- 통계 화면 -->
+  <section id="stats" class="screen hidden">
+    <div class="card">
+      <h2>과목별 정답률</h2>
+      <p class="muted">정답률이 낮은 과목부터 표시됩니다(누적 기준).</p>
+      <div id="statsTable"></div>
+      <div class="actions">
+        <button id="statsHomeBtn" class="primary">홈으로</button>
+      </div>
+    </div>
   </section>
 </main>
 

@@ -5,6 +5,7 @@
   var BANK = (window.QUESTION_BANK || []).slice();
   var LS_WRONG = "khat_gm_wrong";    // 오답노트: 틀린 문항 id 목록
   var LS_STATE = "khat_gm_state";    // 진행 중 세션 저장
+  var LS_STATS = "khat_gm_stats";    // 과목별 누적 통계 {area:{seen,correct}}
 
   // ---------- 유틸 ----------
   function $(sel) { return document.querySelector(sel); }
@@ -58,11 +59,35 @@
       wrap.appendChild(chip);
     });
 
+    // 회차(source) 선택지 — 회차 번호 오름차순, 숫자 없는 항목(샘플 등)은 뒤로
+    var roundSel = $("#round");
+    var prev = roundSel.value;
+    var sources = {};
+    BANK.forEach(function (q) { if (q.source) sources[q.source] = (sources[q.source] || 0) + 1; });
+    var keys = Object.keys(sources).sort(function (a, b) {
+      var na = parseInt((a.match(/\d+/) || ["9999"])[0], 10);
+      var nb = parseInt((b.match(/\d+/) || ["9999"])[0], 10);
+      return na - nb;
+    });
+    roundSel.innerHTML = '<option value="">전체 회차</option>';
+    keys.forEach(function (k) {
+      var o = el("option", null, k + " (" + sources[k] + ")");
+      o.value = k;
+      roundSel.appendChild(o);
+    });
+    if (prev) roundSel.value = prev;
+
     var wrong = loadJSON(LS_WRONG, []);
     $("#wrongInfo").textContent = wrong.length
       ? "오답 " + wrong.length + "문항이 저장되어 있습니다."
       : "아직 저장된 오답이 없습니다.";
     $("#viewWrongBtn").disabled = wrong.length === 0;
+
+    var st = totalStats();
+    $("#statSummary").textContent = st.seen
+      ? "누적 " + st.seen + "문항 · 정답률 " + Math.round(st.correct / st.seen * 100) + "%"
+      : "아직 푼 문항이 없습니다.";
+    $("#viewStatsBtn").disabled = st.seen === 0;
   }
 
   function pickPool() {
@@ -74,6 +99,10 @@
     }
     if (chosen.length) {
       pool = pool.filter(function (q) { return chosen.indexOf(q.area) !== -1; });
+    }
+    var round = $("#round").value;
+    if (round) {
+      pool = pool.filter(function (q) { return q.source === round; });
     }
     return pool;
   }
@@ -135,6 +164,8 @@
   function choose(q, num) {
     session.picks[q.id] = num;
     saveJSON(LS_STATE, session);
+    // 과목별 누적 통계 갱신
+    bumpStats(q.area, num === q.answer);
     // 오답노트 갱신
     var wrong = loadJSON(LS_WRONG, []);
     var has = wrong.indexOf(q.id) !== -1;
@@ -208,6 +239,56 @@
     });
   }
 
+  // ---------- 통계 ----------
+  function bumpStats(area, correct) {
+    if (!area) return;
+    var s = loadJSON(LS_STATS, {});
+    if (!s[area]) s[area] = { seen: 0, correct: 0 };
+    s[area].seen++;
+    if (correct) s[area].correct++;
+    saveJSON(LS_STATS, s);
+  }
+  function totalStats() {
+    var s = loadJSON(LS_STATS, {});
+    var seen = 0, correct = 0;
+    Object.keys(s).forEach(function (a) { seen += s[a].seen; correct += s[a].correct; });
+    return { seen: seen, correct: correct };
+  }
+  function renderStats() {
+    showScreen("stats");
+    var s = loadJSON(LS_STATS, {});
+    var box = $("#statsTable");
+    box.innerHTML = "";
+    var keys = Object.keys(s);
+    if (!keys.length) {
+      box.appendChild(el("p", "muted", "아직 푼 문항이 없습니다."));
+      return;
+    }
+    // 정답률 오름차순(약점 과목 먼저)
+    keys.sort(function (a, b) {
+      return (s[a].correct / s[a].seen) - (s[b].correct / s[b].seen);
+    });
+    var tSeen = 0, tCorrect = 0;
+    keys.forEach(function (a) {
+      var d = s[a]; tSeen += d.seen; tCorrect += d.correct;
+      var pct = Math.round(d.correct / d.seen * 100);
+      var row = el("div", "stat-row");
+      var head = el("div", "stat-head");
+      head.appendChild(el("span", "stat-area", a));
+      head.appendChild(el("span", "stat-num", d.correct + " / " + d.seen + " · " + pct + "%"));
+      row.appendChild(head);
+      var bar = el("div", "stat-bar");
+      var fill = el("div", "stat-fill " + (pct < 60 ? "low" : pct < 80 ? "mid" : "high"));
+      fill.style.width = pct + "%";
+      bar.appendChild(fill);
+      row.appendChild(bar);
+      box.appendChild(row);
+    });
+    var tPct = Math.round(tCorrect / tSeen * 100);
+    var tot = el("p", "stat-total", "전체  " + tCorrect + " / " + tSeen + " · " + tPct + "%");
+    box.appendChild(tot);
+  }
+
   // 오답노트 단독 보기
   function viewWrongNote() {
     var ids = loadJSON(LS_WRONG, []);
@@ -220,7 +301,7 @@
 
   // ---------- 화면 전환 ----------
   function showScreen(name) {
-    ["home", "quiz", "result"].forEach(function (s) {
+    ["home", "quiz", "result", "stats"].forEach(function (s) {
       $("#" + s).classList.toggle("hidden", s !== name);
     });
     window.scrollTo(0, 0);
@@ -239,10 +320,13 @@
       $("#reviewList").scrollIntoView({ behavior: "smooth" });
     });
     $("#viewWrongBtn").addEventListener("click", viewWrongNote);
+    $("#viewStatsBtn").addEventListener("click", renderStats);
+    $("#statsHomeBtn").addEventListener("click", renderHome);
     $("#resetBtn").addEventListener("click", function () {
-      if (confirm("진행상황과 오답노트를 모두 초기화할까요?")) {
+      if (confirm("진행상황·오답노트·통계를 모두 초기화할까요?")) {
         localStorage.removeItem(LS_WRONG);
         localStorage.removeItem(LS_STATE);
+        localStorage.removeItem(LS_STATS);
         renderHome();
       }
     });
