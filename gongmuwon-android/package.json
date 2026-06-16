@@ -1,0 +1,22 @@
+{
+  "name": "gongmuwon-android",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "prepare:web": "node prepare-web.mjs",
+    "sync": "npm run prepare:web && cap sync android",
+    "build:apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "build:aab": "npm run sync && cd android && ./gradlew bundleRelease",
+    "open:android": "npm run prepare:web && cap open android",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.4.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0"
+  }
+}
