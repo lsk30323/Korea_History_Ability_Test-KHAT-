@@ -6,6 +6,7 @@
   var LS_WRONG = "khat_gm_wrong";    // 오답노트: 틀린 문항 id 목록
   var LS_STATE = "khat_gm_state";    // 진행 중 세션 저장
   var LS_STATS = "khat_gm_stats";    // 과목별 누적 통계 {area:{seen,correct}}
+  var LS_ROUNDS = "khat_gm_rounds";  // 회차별 누적 통계 {source:{seen,correct}}
 
   // ---------- 유틸 ----------
   function $(sel) { return document.querySelector(sel); }
@@ -82,6 +83,7 @@
       ? "오답 " + wrong.length + "문항이 저장되어 있습니다."
       : "아직 저장된 오답이 없습니다.";
     $("#viewWrongBtn").disabled = wrong.length === 0;
+    $("#exportWrongBtn").disabled = wrong.length === 0;
 
     var st = totalStats();
     $("#statSummary").textContent = st.seen
@@ -164,8 +166,8 @@
   function choose(q, num) {
     session.picks[q.id] = num;
     saveJSON(LS_STATE, session);
-    // 과목별 누적 통계 갱신
-    bumpStats(q.area, num === q.answer);
+    // 과목별·회차별 누적 통계 갱신
+    bumpStats(q, num === q.answer);
     // 오답노트 갱신
     var wrong = loadJSON(LS_WRONG, []);
     var has = wrong.indexOf(q.id) !== -1;
@@ -240,13 +242,21 @@
   }
 
   // ---------- 통계 ----------
-  function bumpStats(area, correct) {
-    if (!area) return;
-    var s = loadJSON(LS_STATS, {});
-    if (!s[area]) s[area] = { seen: 0, correct: 0 };
-    s[area].seen++;
-    if (correct) s[area].correct++;
-    saveJSON(LS_STATS, s);
+  function _bump(key, k, correct) {
+    if (!k) return;
+    var s = loadJSON(key, {});
+    if (!s[k]) s[k] = { seen: 0, correct: 0 };
+    s[k].seen++;
+    if (correct) s[k].correct++;
+    saveJSON(key, s);
+  }
+  function bumpStats(q, correct) {
+    _bump(LS_STATS, q.area, correct);     // 과목별
+    _bump(LS_ROUNDS, q.source, correct);  // 회차별
+  }
+  function roundNum(name) {
+    var m = String(name).match(/\d+/);
+    return m ? parseInt(m[0], 10) : 9999;
   }
   function totalStats() {
     var s = loadJSON(LS_STATS, {});
@@ -254,27 +264,13 @@
     Object.keys(s).forEach(function (a) { seen += s[a].seen; correct += s[a].correct; });
     return { seen: seen, correct: correct };
   }
-  function renderStats() {
-    showScreen("stats");
-    var s = loadJSON(LS_STATS, {});
-    var box = $("#statsTable");
-    box.innerHTML = "";
-    var keys = Object.keys(s);
-    if (!keys.length) {
-      box.appendChild(el("p", "muted", "아직 푼 문항이 없습니다."));
-      return;
-    }
-    // 정답률 오름차순(약점 과목 먼저)
-    keys.sort(function (a, b) {
-      return (s[a].correct / s[a].seen) - (s[b].correct / s[b].seen);
-    });
-    var tSeen = 0, tCorrect = 0;
-    keys.forEach(function (a) {
-      var d = s[a]; tSeen += d.seen; tCorrect += d.correct;
+  function renderBars(box, data, sortFn) {
+    Object.keys(data).sort(sortFn).forEach(function (k) {
+      var d = data[k];
       var pct = Math.round(d.correct / d.seen * 100);
       var row = el("div", "stat-row");
       var head = el("div", "stat-head");
-      head.appendChild(el("span", "stat-area", a));
+      head.appendChild(el("span", "stat-area", k));
       head.appendChild(el("span", "stat-num", d.correct + " / " + d.seen + " · " + pct + "%"));
       row.appendChild(head);
       var bar = el("div", "stat-bar");
@@ -284,9 +280,61 @@
       row.appendChild(bar);
       box.appendChild(row);
     });
+  }
+  function renderStats() {
+    showScreen("stats");
+    var areas = loadJSON(LS_STATS, {});
+    var rounds = loadJSON(LS_ROUNDS, {});
+    var box = $("#statsTable");
+    box.innerHTML = "";
+    if (!Object.keys(areas).length) {
+      box.appendChild(el("p", "muted", "아직 푼 문항이 없습니다."));
+      return;
+    }
+    // 과목별 — 정답률 오름차순(약점 먼저)
+    box.appendChild(el("h3", "stat-group-title", "과목별 정답률 (약점순)"));
+    renderBars(box, areas, function (a, b) {
+      return (areas[a].correct / areas[a].seen) - (areas[b].correct / areas[b].seen);
+    });
+    // 회차별 추이 — 회차 번호 오름차순
+    if (Object.keys(rounds).length) {
+      box.appendChild(el("h3", "stat-group-title", "회차별 추이"));
+      renderBars(box, rounds, function (a, b) { return roundNum(a) - roundNum(b); });
+    }
+    // 전체 합계
+    var tSeen = 0, tCorrect = 0;
+    Object.keys(areas).forEach(function (a) { tSeen += areas[a].seen; tCorrect += areas[a].correct; });
     var tPct = Math.round(tCorrect / tSeen * 100);
-    var tot = el("p", "stat-total", "전체  " + tCorrect + " / " + tSeen + " · " + tPct + "%");
-    box.appendChild(tot);
+    box.appendChild(el("p", "stat-total", "전체  " + tCorrect + " / " + tSeen + " · " + tPct + "%"));
+  }
+
+  // ---------- 오답노트 CSV 내보내기 ----------
+  function csvCell(v) {
+    v = String(v == null ? "" : v);
+    return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function exportWrongCSV() {
+    var ids = loadJSON(LS_WRONG, []);
+    var items = BANK.filter(function (q) { return ids.indexOf(q.id) !== -1; });
+    if (!items.length) { alert("내보낼 오답이 없습니다."); return; }
+    var rows = [["과목", "회차", "문제", "보기1", "보기2", "보기3", "보기4", "보기5", "정답", "해설", "핵심"]];
+    items.forEach(function (q) {
+      var o = (q.options || []).slice();
+      while (o.length < 5) o.push("");
+      rows.push([q.area, q.source, q.q, o[0], o[1], o[2], o[3], o[4],
+        "①②③④⑤".charAt((q.answer || 0) - 1) || "", q.reason, q.keyword]);
+    });
+    var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\r\n");
+    // BOM(﻿) → Excel 한글 깨짐 방지
+    var blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "오답노트_" + new Date().toISOString().slice(0, 10) + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
   // 오답노트 단독 보기
@@ -320,6 +368,7 @@
       $("#reviewList").scrollIntoView({ behavior: "smooth" });
     });
     $("#viewWrongBtn").addEventListener("click", viewWrongNote);
+    $("#exportWrongBtn").addEventListener("click", exportWrongCSV);
     $("#viewStatsBtn").addEventListener("click", renderStats);
     $("#statsHomeBtn").addEventListener("click", renderHome);
     $("#resetBtn").addEventListener("click", function () {
@@ -327,6 +376,7 @@
         localStorage.removeItem(LS_WRONG);
         localStorage.removeItem(LS_STATE);
         localStorage.removeItem(LS_STATS);
+        localStorage.removeItem(LS_ROUNDS);
         renderHome();
       }
     });

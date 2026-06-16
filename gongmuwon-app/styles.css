@@ -65,6 +65,10 @@ button:disabled{opacity:.5; cursor:default}
 .review-item .ans{font-size:14px}
 .review-item .ans .yours{color:var(--no)}
 .review-item .ans .right{color:var(--ok)}
+.btn-row{display:flex; gap:10px; flex-wrap:wrap}
+.btn-row button{flex:1; min-width:120px}
+.stat-group-title{font-size:14px; color:var(--gold); margin:22px 0 4px; padding-bottom:6px; border-bottom:1px solid var(--line)}
+.stat-group-title:first-child{margin-top:0}
 .stat-row{margin:14px 0}
 .stat-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; font-size:14px}
 .stat-area{font-weight:600}
