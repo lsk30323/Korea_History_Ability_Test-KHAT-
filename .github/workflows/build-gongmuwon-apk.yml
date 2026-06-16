@@ -1,0 +1,50 @@
+name: Build 공무원 한능검 문제집 APK (personal)
+
+# 개인 설치용 디버그 APK 빌드. 수동 실행(Actions 탭) 또는 관련 파일 변경 푸시 시 동작.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "gongmuwon-android/**"
+      - "gongmuwon-app/**"
+      - "docs/data/**"
+      - ".github/workflows/build-gongmuwon-apk.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        working-directory: gongmuwon-android
+        run: npm install
+
+      - name: Build debug APK
+        working-directory: gongmuwon-android
+        run: |
+          chmod +x android/gradlew
+          npm run build:apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gongmuwon-khat-debug-apk
+          path: gongmuwon-android/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
