@@ -1,0 +1,68 @@
+:root{
+  --bg:#f7f3ec; --card:#fff; --ink:#22303c; --muted:#71798a;
+  --navy:#1e3a5f; --navy2:#2c4f78; --gold:#b1842f; --line:#e7e0d3;
+  --ok:#2f7d5d; --okbg:#eaf5ef; --no:#c0584b; --nobg:#fbece9;
+  --pill:#eef2f7; --sel:#eef3f9;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.5;
+}
+.topbar{
+  position:sticky; top:0; z-index:10; display:flex; align-items:center; justify-content:space-between;
+  gap:8px; padding:12px 16px; background:var(--navy); color:#fff;
+}
+.topbar h1{font-size:16px; margin:0; font-weight:600}
+.badge{font-size:11px; background:var(--gold); color:#fff; padding:2px 6px; border-radius:6px; margin-left:6px; vertical-align:middle}
+main{max-width:720px; margin:0 auto; padding:16px}
+.screen{display:flex; flex-direction:column; gap:16px}
+.hidden{display:none !important}
+.card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:18px}
+.card.center{text-align:center}
+h2{margin:0 0 10px; font-size:18px}
+.muted{color:var(--muted); font-size:14px}
+.field{display:block; margin:14px 0}
+.field>span{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+.field.row{display:flex; align-items:center; gap:8px}
+.field.row>span{margin:0}
+select{width:100%; padding:10px; border:1px solid var(--line); border-radius:10px; background:#fff; font-size:15px}
+.chips{display:flex; flex-wrap:wrap; gap:8px}
+.chip{padding:6px 12px; border:1px solid var(--line); border-radius:999px; background:#fff; font-size:13px; cursor:pointer; user-select:none}
+.chip.on{background:var(--navy); color:#fff; border-color:var(--navy)}
+button{font-family:inherit; cursor:pointer; border:none; border-radius:10px; padding:12px 16px; font-size:15px}
+button.primary{background:var(--navy); color:#fff}
+button.ghost{background:var(--pill); color:var(--navy)}
+button:disabled{opacity:.5; cursor:default}
+.actions{display:flex; gap:10px; margin-top:14px}
+.actions.center{justify-content:center}
+.actions button{flex:1}
+.actions.center button{flex:0 1 auto}
+.progress{height:6px; background:var(--line); border-radius:999px; overflow:hidden; margin-bottom:12px}
+#progressBar{height:100%; width:0; background:var(--gold); transition:width .2s}
+.quiz-meta{display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:13px; color:var(--muted)}
+.tag{background:var(--pill); color:var(--navy); padding:2px 8px; border-radius:6px; font-size:12px}
+.tag.soft{background:var(--sel); color:var(--gold)}
+.passage{background:#f4efe3; border-left:3px solid var(--gold); padding:12px 14px; border-radius:8px; white-space:pre-wrap; font-size:15px}
+.question{font-weight:600; margin:14px 0}
+.options{list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px}
+.options li{border:1px solid var(--line); border-radius:10px; padding:12px 14px; cursor:pointer; font-size:15px}
+.options li .num{font-weight:700; color:var(--navy2); margin-right:8px}
+.options li.sel{background:var(--sel); border-color:var(--navy2)}
+.options li.correct{background:var(--okbg); border-color:var(--ok)}
+.options li.incorrect{background:var(--nobg); border-color:var(--no)}
+.options li.locked{cursor:default}
+.feedback{border-radius:12px; padding:14px; font-size:14px}
+.feedback.ok{background:var(--okbg); border:1px solid var(--ok)}
+.feedback.no{background:var(--nobg); border:1px solid var(--no)}
+.feedback h4{margin:0 0 6px}
+.feedback .reason{margin:6px 0}
+.feedback .key{margin-top:8px; font-weight:600; color:var(--gold)}
+.score{font-size:44px; font-weight:800; color:var(--navy); margin:8px 0}
+#reviewList{display:flex; flex-direction:column; gap:12px}
+.review-item{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px}
+.review-item .q{font-weight:600; margin:4px 0 8px}
+.review-item .ans{font-size:14px}
+.review-item .ans .yours{color:var(--no)}
+.review-item .ans .right{color:var(--ok)}
+.foot{max-width:720px; margin:0 auto; padding:20px 16px 40px; color:var(--muted); font-size:12px; text-align:center}

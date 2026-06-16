@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1e3a5f" />
+<title>공무원 한능검 문제집 (개인용)</title>
+<link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <h1>공무원 한능검 문제집 <span class="badge">개인용</span></h1>
+  <button id="resetBtn" class="ghost" title="진행상황 초기화">초기화</button>
+</header>
+
+<main id="app">
+  <!-- 홈 화면 -->
+  <section id="home" class="screen">
+    <div class="card">
+      <h2>학습 시작</h2>
+      <p class="muted" id="bankInfo">문제 은행을 불러오는 중…</p>
+
+      <label class="field">
+        <span>과목 선택</span>
+        <div id="areaChips" class="chips"></div>
+      </label>
+
+      <label class="field">
+        <span>문항 수</span>
+        <select id="count">
+          <option value="10">10문항</option>
+          <option value="20" selected>20문항</option>
+          <option value="50">50문항</option>
+          <option value="0">전체</option>
+        </select>
+      </label>
+
+      <label class="field row">
+        <input type="checkbox" id="shuffle" checked />
+        <span>문항 순서 섞기</span>
+      </label>
+      <label class="field row">
+        <input type="checkbox" id="onlyWrong" />
+        <span>오답노트 문항만 풀기</span>
+      </label>
+
+      <button id="startBtn" class="primary">풀기 시작</button>
+    </div>
+
+    <div class="card">
+      <h2>오답노트</h2>
+      <p class="muted" id="wrongInfo">틀린 문항이 여기에 모입니다.</p>
+      <button id="viewWrongBtn" class="ghost">오답노트 보기</button>
+    </div>
+  </section>
+
+  <!-- 풀이 화면 -->
+  <section id="quiz" class="screen hidden">
+    <div class="progress"><div id="progressBar"></div></div>
+    <div class="quiz-meta">
+      <span id="qIndex"></span>
+      <span id="qArea" class="tag"></span>
+      <span id="qSource" class="tag soft"></span>
+    </div>
+    <div class="card">
+      <p id="passage" class="passage"></p>
+      <p id="question" class="question"></p>
+      <ul id="options" class="options"></ul>
+    </div>
+    <div id="feedback" class="feedback hidden"></div>
+    <div class="actions">
+      <button id="prevBtn" class="ghost">이전</button>
+      <button id="nextBtn" class="primary">다음</button>
+    </div>
+  </section>
+
+  <!-- 결과 화면 -->
+  <section id="result" class="screen hidden">
+    <div class="card center">
+      <h2>채점 결과</h2>
+      <div id="scoreBig" class="score"></div>
+      <p id="scoreText" class="muted"></p>
+      <div class="actions center">
+        <button id="reviewBtn" class="ghost">오답 다시보기</button>
+        <button id="homeBtn" class="primary">홈으로</button>
+      </div>
+    </div>
+    <div id="reviewList"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  본 앱은 개인 학습용입니다. 기출 원문은 수록하지 않으며, 표시된 출처(source)의 문항만 포함합니다.
+</footer>
+
+<script src="./data/bank.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>
