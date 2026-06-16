@@ -3,6 +3,16 @@
 기존 프로젝트(`docs/` PWA, `study-materials/`, Capacitor 앱)와 **분리된 개인 학습용 앱**입니다.
 풀기 · 채점 · 과목별 분류 · 오답노트 기능을 제공합니다.
 
+## 수록 문항
+
+- **모의고사 1~20회 = 1,000문항** (`../docs/data/exam-1~20.js`를 그대로 참조)
+- 자체제작 샘플 6문항(`data/bank.js`)
+- 13개 과목 분류: 선사·고대·고려·조선전기·조선후기·근대·일제강점기·현대·세시풍속·유네스코·지역사·인물사·문화재
+
+> 모의고사 데이터는 `docs/data`의 **단일 원본**을 참조합니다(중복 저장 없음).
+> `docs/data`를 갱신하면 이 앱도 자동으로 반영됩니다.
+> `data/adapter.js`가 `EXAM_DATA` → `QUESTION_BANK` 스키마 변환을 담당합니다.
+
 ## 실행
 
 별도 빌드 없이 브라우저에서 바로 열면 됩니다.
@@ -11,6 +21,9 @@
 gongmuwon-app/index.html  →  더블클릭(파일 열기) 또는
 python3 -m http.server     →  http://localhost:8000/gongmuwon-app/
 ```
+
+> `../docs/data` 를 참조하므로, http 서버는 **저장소 루트**에서 실행하세요.
+> 파일을 직접 열 때도 `gongmuwon-app` 위치 기준 상대경로(`../docs`)로 동작합니다.
 
 진행상황과 오답노트는 브라우저 `localStorage`에 저장됩니다(이 기기/브라우저 한정).
 
