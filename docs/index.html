@@ -116,6 +116,14 @@
   .seq i{color:var(--gold);font-style:normal;font-weight:900}
   .list-item{padding:11px 0;border-bottom:1px solid var(--line)}
   .list-item:last-child{border-bottom:0}
+  .statrow{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}
+  .statrow .nm{width:62px;flex:0 0 auto;font-weight:700}
+  .statrow .bw{flex:1;height:9px;background:var(--line);border-radius:999px;overflow:hidden}
+  .statrow .bw>i{display:block;height:100%;border-radius:999px}
+  .statrow .pc{width:46px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}
+  body.fs-sm .qtext{font-size:15px}body.fs-sm .opt{font-size:14px}body.fs-sm .passage{font-size:13px}
+  body.fs-lg .qtext{font-size:20px}body.fs-lg .opt{font-size:17px}body.fs-lg .passage{font-size:16px}body.fs-lg .expl{font-size:15.5px}
+  .lginput{width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);margin-bottom:8px;font-size:15px}
   .nav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--navbg);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
   .nav button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;padding:4px}
   .nav button .ic{font-size:19px}
@@ -131,12 +139,29 @@
 <div id="app"></div>
 <div class="toast" id="toast"></div>
 
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="./data/exam-1.js"></script>
 <script src="./data/exam-2.js"></script>
 <script src="./data/exam-3.js"></script>
 <script src="./data/exam-4.js"></script>
 <script src="./data/exam-5.js"></script>
+<script src="./data/exam-6.js"></script>
+<script src="./data/exam-7.js"></script>
+<script src="./data/exam-8.js"></script>
+<script src="./data/exam-9.js"></script>
+<script src="./data/exam-10.js"></script>
+<script src="./data/exam-11.js"></script>
+<script src="./data/exam-12.js"></script>
+<script src="./data/exam-13.js"></script>
+<script src="./data/exam-14.js"></script>
+<script src="./data/exam-15.js"></script>
+<script src="./data/exam-16.js"></script>
+<script src="./data/exam-17.js"></script>
+<script src="./data/exam-18.js"></script>
+<script src="./data/exam-19.js"></script>
+<script src="./data/exam-20.js"></script>
 <script src="./data/concepts.js"></script>
+<script src="./firebase-sync.js"></script>
 <script>
 (function(){
   "use strict";
@@ -159,9 +184,44 @@
 
   // ---- storage ----
   function load(k,d){ try{ var v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
-  function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
-  function results(){ return load("hg2_results",[]); }
-  function wrongMap(){ return load("hg2_wrong",{}); }
+  function save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} cloudMaybe(k); }
+  function fbReady(){ return !!(window.HG2SYNC && window.HG2SYNC.enabled); }
+  function cloudMaybe(k){ if(fbReady() && S.fbUid && k.indexOf("hg2:"+S.fbUid+":")===0){ try{ HG2SYNC.push(S.fbUid,{results:load("hg2:"+S.fbUid+":results",[]),wrong:load("hg2:"+S.fbUid+":wrong",{}),bm:load("hg2:"+S.fbUid+":bm",[])}); }catch(e){} } }
+  function onFbUser(u){
+    if(!u){ S.fbUid=null; return; }
+    S.fbUid=u.uid;
+    var ps=profiles(), ex=ps.filter(function(p){return p.id===u.uid;})[0];
+    var prov=(u.providerData&&u.providerData[0]&&u.providerData[0].providerId)||"";
+    if(!ex){ ps.push({id:u.uid,type:prov.indexOf("google")>=0?"google":"email",name:u.displayName||((u.email||"").split("@")[0])||"사용자",email:u.email||"",created:Date.now()}); setProfiles(ps); }
+    setCur(u.uid);
+    try{ HG2SYNC.pull(u.uid).then(function(d){
+      if(d){ if(d.results) save("hg2:"+u.uid+":results",d.results); if(d.wrong) save("hg2:"+u.uid+":wrong",d.wrong); if(d.bm) save("hg2:"+u.uid+":bm",d.bm); }
+      if(S.view==="login"||S.view==="account") go("home"); else render();
+    }).catch(function(){ if(S.view==="login") go("home"); }); }catch(e){ if(S.view==="login") go("home"); }
+  }
+  // ---- 프로필(로그인) ----
+  var GOOGLE_CLIENT_ID = ""; // Google OAuth 클라이언트 ID 입력 시 구글 로그인 활성화
+  function profiles(){ return load("hg2_profiles", []); }
+  function setProfiles(p){ save("hg2_profiles", p); }
+  function curId(){ return load("hg2_current", null); }
+  function setCur(id){ if(id==null){ try{localStorage.removeItem("hg2_current");}catch(e){} } else save("hg2_current", id); }
+  function curProfile(){ var id=curId(); return profiles().filter(function(p){return p.id===id;})[0]||null; }
+  function pkey(k){ return "hg2:"+(curId()||"guest")+":"+k; }
+  function addProfile(type, name, email){
+    var ps=profiles();
+    if(email){ var ex=ps.filter(function(x){return x.email===email;})[0]; if(ex){ setCur(ex.id); return ex; } }
+    var id=type+"_"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    var p={id:id,type:type,name:name||"게스트",email:email||"",created:Date.now()};
+    ps.push(p); setProfiles(ps); setCur(id); return p;
+  }
+  function migrateLegacy(){
+    if(profiles().length) return;
+    var oldR=load("hg2_results",null), oldW=load("hg2_wrong",null);
+    if(oldR||oldW){ var p={id:"local_legacy",type:"guest",name:"내 기록",email:"",created:Date.now()}; setProfiles([p]); setCur(p.id);
+      if(oldR) save("hg2:"+p.id+":results", oldR); if(oldW) save("hg2:"+p.id+":wrong", oldW); }
+  }
+  function results(){ return load(pkey("results"),[]); }
+  function wrongMap(){ return load(pkey("wrong"),{}); }
   function bestFor(exam){ var b=null; results().forEach(function(r){ if(r.exam===exam && (!b||r.correct>b.correct)) b=r; }); return b; }
 
   // ---- helpers ----
@@ -194,18 +254,24 @@
     else if(v==="review") html=vReview();
     else if(v==="wrong") html=vWrong();
     else if(v==="concepts") html=vConcepts();
-    var showNav = ["home","examList","practiceSetup","wrong","concepts"].indexOf(v)>=0;
+    else if(v==="stats") html=vStats();
+    else if(v==="login") html=vLogin();
+    else if(v==="account") html=vAccount();
+    else if(v==="search") html=vSearch();
+    else if(v==="bookmarks") html=vBookmarks();
+    else if(v==="question") html=vQuestion();
+    var showNav = ["home","examList","practiceSetup","wrong","concepts","stats","account","search","bookmarks"].indexOf(v)>=0;
     app.innerHTML = html + (showNav? vNav() : "");
     bind();
     if(v==="quiz" && S.mode==="exam") startExamTimer();
   }
 
   function header(title,backTo){
-    return '<header class="bar">'+(backTo!=null?'<button class="btn-back" data-go="'+backTo+'">‹ 뒤로</button>':'')+'<h1>'+esc(title)+'</h1><button class="btn-back" data-theme-toggle="1" aria-label="다크모드 전환" style="background:none;font-size:18px;padding:6px 8px">'+(isDark()?'☀️':'🌙')+'</button></header>';
+    return '<header class="bar">'+(backTo!=null?'<button class="btn-back" data-go="'+backTo+'">‹ 뒤로</button>':'')+'<h1>'+esc(title)+'</h1><button class="btn-back" data-go="account" aria-label="계정" style="background:none;font-size:17px;padding:6px 8px">👤</button><button class="btn-back" data-theme-toggle="1" aria-label="다크모드 전환" style="background:none;font-size:18px;padding:6px 8px">'+(isDark()?'☀️':'🌙')+'</button></header>';
   }
   function vNav(){
     function b(tab,ic,label){ return '<button class="'+(S.view===tab?"on":"")+'" data-nav="'+tab+'"><span class="ic">'+ic+'</span>'+label+'</button>'; }
-    return '<div class="nav">'+b("home","🏠","홈")+b("wrong","✕","오답노트")+b("concepts","📌","개념·D-7")+'</div>';
+    return '<div class="nav">'+b("home","🏠","홈")+b("stats","📊","통계")+b("wrong","✕","오답노트")+b("concepts","📌","개념")+'</div>';
   }
 
   // -------- HOME --------
@@ -215,16 +281,22 @@
     var h=header("한능검 2급 합격 마스터",null);
     h+='<div class="hero"><div class="kword">KOREAN HISTORY · LEVEL 2</div>'+
        '<h2>한능검 2급<br>합격 마스터</h2>'+
-       '<p>모의고사 5회 · 250문항 · 해설 · 오답노트</p></div>';
+       '<p>모의고사 '+Object.keys(ED).length+'회 · '+ALL.length+'문항 · 해설 · 오답노트</p></div>';
+    h+='<div style="display:flex;gap:8px;margin:14px 0"><input id="homeSearch" class="lginput" style="margin:0;flex:1;width:auto" placeholder="🔍 문제 검색 (예: 신문왕, 갑오개혁)"><button class="btn primary" data-dosearch="1" style="width:auto;padding:0 18px">검색</button></div>';
     h+='<div class="grid">'+
-      tile("exam","📝","모의고사","5회분 · 자동채점·급환산")+
+      tile("exam","📝","모의고사",Object.keys(ED).length+"회분 · 자동채점·급환산")+
       tile("practice","🎯","영역 연습","13개 영역 랜덤 풀이")+
       tile("wrong","✕","오답노트","틀린 문제 자동 누적")+
       tile("concepts","📌","개념·D-7","시대 뼈대·함정·요약")+
+      tile("stats","📊","통계","영역별 약점·점수 추이")+
+      tile("bookmarks","⭐","북마크","즐겨찾기한 문제 복습")+
     '</div>';
+    h+='<button class="btn ghost" data-ext="http://tok.historyexam.go.kr/" style="margin-bottom:12px">🏛️ 공식 기출문제 풀기 (국사편찬위·무료)</button>';
+    var st=streakInfo();
     h+='<div class="card"><div class="row"><div><div class="muted" style="font-size:12px">학습 현황</div>'+
-       '<div style="font-weight:800;margin-top:2px">응시 '+taken+'회 · 최고 '+best+'/50 · 오답 '+wn+'개</div></div>'+
-       '<span class="pill gold">2급 목표 40개</span></div></div>';
+       '<div style="font-weight:800;margin-top:2px">🔥 '+st.streak+'일 연속 · 응시 '+taken+'회 · 최고 '+best+'/50</div>'+
+       '<div class="muted" style="font-size:12px;margin-top:3px">오답 '+wn+'개 · 오늘 '+(st.today?"완료 ✓":"미완 — 1세트!")+'</div></div>'+
+       '<span class="pill gold">2급 40개</span></div></div>';
     if(deferredPrompt) h+='<button class="btn gold" id="installBtn" style="margin-bottom:12px">📲 홈 화면에 앱 설치</button>';
     return h;
   }
@@ -339,10 +411,10 @@
       byArea[q.area][1]++; if(ok){byArea[q.area][0]++; correct++; delete wm[q.src];}
       else { wm[q.src]={area:q.area,exam:q.exam,n:q.n,q:q.q,ans:q.answer,chosen:ch,t:Date.now()}; }
     });
-    save("hg2_wrong",wm);
+    save(pkey("wrong"),wm);
     var rec={exam:S.examNo,date:Date.now(),correct:correct,total:qs.length,byArea:byArea,answers:{}};
     qs.forEach(function(q,i){rec.answers[i]=S.answers[i]||null;});
-    var rs=results(); rs.push(rec); save("hg2_results",rs);
+    var rs=results(); rs.push(rec); save(pkey("results"),rs);
     S.lastResult=rec; go("result");
   }
 
@@ -363,7 +435,8 @@
     });
     h+='</div>';
     h+='<button class="btn primary" data-review="1">📖 문항별 해설 보기</button>';
-    h+='<div class="btnrow" style="margin-top:10px"><button class="btn ghost sm" data-retry="'+r.exam+'">다시 풀기</button><button class="btn ghost sm" data-go="home">홈으로</button></div>';
+    h+='<button class="btn ghost" data-img="1" style="margin-top:10px">🖼️ 결과 이미지 저장/공유</button>';
+    h+='<div class="btnrow" style="margin-top:10px"><button class="btn ghost sm" data-retry="'+r.exam+'">다시 풀기</button><button class="btn ghost sm" data-share="1">📤 공유</button><button class="btn ghost sm" data-go="home">홈</button></div>';
     return h;
   }
 
@@ -376,7 +449,8 @@
       var ch=r.answers[i], ok=(ch===q.answer);
       if(only&&ok) return;
       h+='<div class="card"><div class="qtop"><span class="tag">'+esc(q.area)+'</span><span class="muted" style="font-size:12px">'+(i+1)+'번</span>'+
-         '<span class="pill '+(ok?"":"")+'" style="background:'+(ok?"#e9f3ec":"#f7e7e3")+';color:'+(ok?"#1f7a4d":"#b04434")+'">'+(ok?"정답":"오답")+'</span></div>';
+         '<span class="pill" style="background:'+(ok?"#e9f3ec":"#f7e7e3")+';color:'+(ok?"#1f7a4d":"#b04434")+'">'+(ok?"정답":"오답")+'</span>'+
+         '<button class="btn-back" data-bm="'+esc(q.src)+'" style="background:none;padding:2px 6px;font-size:15px">'+(isBm(q.src)?"⭐":"☆")+'</button></div>';
       if(q.passage) h+='<div class="passage">'+esc(q.passage)+'</div>';
       h+='<div class="qtext" style="font-size:15px">'+esc(q.q)+'</div>';
       for(var k=0;k<q.options.length;k++){ var n=k+1,cls="opt";
@@ -405,6 +479,210 @@
       });
       h+='</div>';
     });
+    return h;
+  }
+
+  // -------- 결과 이미지 / 학습 스트릭 --------
+  function streakInfo(){
+    var rs=results(), days={};
+    rs.forEach(function(r){ var d=new Date(r.date); days[d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate()]=1; });
+    function key(dt){ return dt.getFullYear()+"-"+(dt.getMonth()+1)+"-"+dt.getDate(); }
+    var today=new Date(), hasToday=!!days[key(today)], streak=0, cur=new Date(today);
+    if(!hasToday) cur.setDate(cur.getDate()-1);
+    while(days[key(cur)]){ streak++; cur.setDate(cur.getDate()-1); }
+    return { streak:streak, today:hasToday, days:Object.keys(days).length, total:rs.length };
+  }
+  function downloadBlob(blob, name){ var u=URL.createObjectURL(blob); var a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(u);},2000); }
+  function resultCanvas(){
+    var r=S.lastResult; if(!r) return null;
+    var g=gradeOf(r.correct), W=720, H=440, c=document.createElement("canvas"); c.width=W; c.height=H;
+    var x=c.getContext("2d"), FNT='"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif';
+    x.fillStyle="#1e3a5f"; x.fillRect(0,0,W,H);
+    x.fillStyle="#c8a35a"; x.fillRect(0,0,W,10);
+    x.fillStyle="#cfe0f2"; x.font="bold 28px "+FNT; x.fillText("한능검 2급 모의고사 "+r.exam+"회", 44, 80);
+    x.fillStyle="#ffffff"; x.font="bold 150px "+FNT; var sc=String(r.correct); x.fillText(sc, 40, 244);
+    x.fillStyle="#9bb4d0"; x.font="bold 48px "+FNT; x.fillText("/ "+r.total, 52+x.measureText(sc).width, 244);
+    x.fillStyle="#c8a35a"; x.font="bold 44px "+FNT; x.fillText("예상 "+g.label, 44, 314);
+    var d=new Date(r.date); x.fillStyle="#9bb4d0"; x.font="22px "+FNT; x.fillText(d.getFullYear()+"."+(d.getMonth()+1)+"."+d.getDate(), 44, 362);
+    x.fillStyle="#cfe0f2"; x.font="bold 24px "+FNT; x.fillText("한능검 2급 합격 마스터", 44, 410);
+    return c;
+  }
+  function saveResultImage(){
+    var c=resultCanvas(); if(!c){ toast("결과가 없어요"); return; }
+    c.toBlob(function(blob){
+      if(!blob){ toast("이미지 생성 실패"); return; }
+      var file=null; try{ file=new File([blob],"한능검_결과.png",{type:"image/png"}); }catch(e){}
+      if(file && navigator.canShare && navigator.canShare({files:[file]}) && navigator.share){
+        navigator.share({files:[file],title:"한능검 2급 모의고사 결과"}).catch(function(){ downloadBlob(blob,"한능검_결과.png"); });
+      } else { downloadBlob(blob,"한능검_결과.png"); toast("결과 이미지를 저장했어요"); }
+    }, "image/png");
+  }
+
+  // -------- 검색 / 북마크 / 공유 --------
+  function bmList(){ return load(pkey("bm"),[]); }
+  function isBm(src){ return bmList().indexOf(src)>=0; }
+  function toggleBm(src){ var b=bmList(), i=b.indexOf(src); if(i>=0) b.splice(i,1); else b.unshift(src); save(pkey("bm"),b); return i<0; }
+  function searchHits(q){
+    q=(q||"").trim().toLowerCase(); if(!q) return [];
+    var hits=[];
+    for(var i=0;i<ALL.length;i++){ var x=ALL[i];
+      var hay=((x.q||"")+" "+(x.passage||"")+" "+(x.options||[]).join(" ")+" "+(x.area||"")+" "+(x.keyword||"")).toLowerCase();
+      if(hay.indexOf(q)>=0){ hits.push(x); if(hits.length>=80) break; } }
+    return hits;
+  }
+  function vSearch(){
+    var h=header("문제 검색","home"), q=S.searchQ||"";
+    h+='<div style="display:flex;gap:8px;margin-bottom:12px"><input id="sq" class="lginput" style="margin:0;flex:1;width:auto" value="'+esc(q)+'" placeholder="키워드 (예: 신문왕, 대동법)"><button class="btn primary" data-dosearch2="1" style="width:auto;padding:0 18px">검색</button></div>';
+    if(q){ var hits=searchHits(q);
+      h+='<div class="kbar">"'+esc(q)+'" 결과 '+hits.length+'개'+(hits.length>=80?" (상위 80)":"")+'</div>';
+      if(!hits.length) h+='<div class="card center muted" style="padding:24px">검색 결과가 없어요.</div>';
+      hits.forEach(function(x){ h+='<div class="card" data-q="'+esc(x.src)+'" style="cursor:pointer;padding:13px"><div class="qtop"><span class="tag">'+esc(x.area)+'</span><span class="muted" style="font-size:12px">'+esc(String(x.exam))+'회 '+x.n+'번</span>'+(isBm(x.src)?'<span class="pill gold">⭐</span>':'')+'</div><div style="font-size:14px;font-weight:600;margin-top:3px">'+esc((x.q||"").slice(0,60))+((x.q||"").length>60?"…":"")+'</div></div>'; });
+    } else { h+='<div class="card center muted" style="padding:24px">키워드를 입력해 '+ALL.length+'문항을 검색하세요.</div>'; }
+    return h;
+  }
+  function vQuestion(){
+    var x=BYSRC[S.viewQ], back=S.qBack||"search", h=header("문제 보기",back);
+    if(!x){ h+='<div class="card">문제를 찾을 수 없어요.</div>'; return h; }
+    h+='<div class="qtop"><span class="tag">'+esc(x.area)+'</span><span class="muted" style="font-size:12px">'+esc(String(x.exam))+'회 '+x.n+'번</span><button class="btn-back" data-bm="'+esc(x.src)+'" style="background:none;padding:2px 8px;font-size:15px">'+(isBm(x.src)?"⭐ 북마크됨":"☆ 북마크")+'</button></div>';
+    if(x.passage) h+='<div class="passage">'+esc(x.passage)+'</div>';
+    h+='<div class="qtext">'+esc(x.q)+'</div>';
+    for(var k=0;k<x.options.length;k++){ var cls="opt"+((k+1)===x.answer?" correct":""); h+='<div class="'+cls+'"><span class="num">'+CIRC[k]+'</span><span>'+esc(x.options[k])+'</span></div>'; }
+    h+=explBlock(x);
+    return h;
+  }
+  function vBookmarks(){
+    var b=bmList(), h=header("북마크","home");
+    if(!b.length){ h+='<div class="card center" style="padding:30px 16px"><div style="font-size:30px">⭐</div><div style="font-weight:800;margin-top:8px">북마크가 없어요</div><div class="muted" style="font-size:13px">문제 보기·해설에서 ☆를 눌러 즐겨찾기하세요.</div></div>'; return h; }
+    h+='<div class="kbar">북마크 '+b.length+'개</div>';
+    b.forEach(function(s){ var x=BYSRC[s]; if(!x)return; h+='<div class="card" data-q="'+esc(s)+'" data-qback="bookmarks" style="cursor:pointer;padding:13px"><div class="qtop"><span class="tag">'+esc(x.area)+'</span><span class="muted" style="font-size:12px">'+esc(String(x.exam))+'회 '+x.n+'번</span></div><div style="font-size:14px;font-weight:600;margin-top:3px">'+esc((x.q||"").slice(0,60))+((x.q||"").length>60?"…":"")+'</div></div>'; });
+    return h;
+  }
+  function shareResult(){
+    var r=S.lastResult; if(!r) return; var g=gradeOf(r.correct);
+    var txt="한능검 2급 모의고사 "+r.exam+"회: "+r.correct+"/"+r.total+" (예상 "+g.label+") — 한능검 2급 합격 마스터 앱";
+    if(navigator.share){ navigator.share({title:"한능검 2급 모의고사 결과",text:txt}).catch(function(){}); }
+    else if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){toast("결과를 클립보드에 복사했어요");}).catch(function(){toast("공유: "+txt);}); }
+    else { toast("공유: "+txt); }
+  }
+
+  // -------- 로그인 / 계정 / 설정 --------
+  function applyFont(){ var s=load("hg2_font","md"); document.body.classList.remove("fs-sm","fs-lg"); if(s==="sm")document.body.classList.add("fs-sm"); else if(s==="lg")document.body.classList.add("fs-lg"); }
+  function setFont(s){ save("hg2_font",s); applyFont(); render(); }
+  function doLogin(type){
+    if(type==="guest"){ addProfile("guest","게스트",""); S.loginMode=null; go("home"); }
+    else if(type==="email"){ S.loginMode="email"; render(); }
+    else if(type==="emailGo"){
+      var em=((document.getElementById("liEmail")||{}).value||"").trim().toLowerCase();
+      if(em.indexOf("@")<1){ toast("이메일 주소를 확인하세요"); return; }
+      var nm=((document.getElementById("liName")||{}).value||"").trim()||em.split("@")[0];
+      addProfile("email",nm,em); S.loginMode=null; go("home");
+    }
+    else if(type==="fbSignIn"||type==="fbSignUp"){
+      var em2=((document.getElementById("liEmail")||{}).value||"").trim().toLowerCase();
+      var pw=((document.getElementById("liPw")||{}).value||"");
+      if(em2.indexOf("@")<1||pw.length<6){ toast("이메일과 6자 이상 비밀번호를 입력하세요"); return; }
+      var pr=(type==="fbSignUp")?HG2SYNC.signUpEmail(em2,pw):HG2SYNC.signInEmail(em2,pw);
+      pr.catch(function(e){ toast("실패: "+((e&&e.code)||"오류")); });
+    }
+    else if(type==="google"){
+      if(fbReady()){ HG2SYNC.signInGoogle().catch(function(e){ toast("구글 로그인 실패: "+((e&&e.code)||"오류")); }); }
+      else { toast("구글 로그인은 설정이 필요해요(FIREBASE_SETUP.md). 우선 이메일·게스트로 시작하세요."); }
+    }
+  }
+  function setupGoogle(){
+    if(!(GOOGLE_CLIENT_ID && window.google && window.google.accounts && window.google.accounts.id)) return;
+    try{
+      window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: onGoogle });
+      var el=document.getElementById("gsi");
+      if(el) window.google.accounts.id.renderButton(el, { theme:"outline", size:"large", text:"continue_with", width:280 });
+    }catch(e){}
+  }
+  function onGoogle(resp){
+    try{
+      var b=resp.credential.split(".")[1].replace(/-/g,"+").replace(/_/g,"/");
+      var p=JSON.parse(decodeURIComponent(escape(atob(b))));
+      addProfile("google", p.name||p.email||"Google 사용자", (p.email||"").toLowerCase());
+      S.loginMode=null; go("home");
+    }catch(e){ toast("구글 로그인 처리에 실패했어요"); }
+  }
+  function vLogin(){
+    if(S.loginMode==="email"){
+      var fb=fbReady();
+      var f='<header class="bar"><button class="btn-back" data-loginback="1">‹ 뒤로</button><h1>'+(fb?"이메일 로그인":"이메일로 시작")+'</h1></header>';
+      f+='<div class="card"><div style="font-weight:800;margin-bottom:10px">'+(fb?"이메일 계정":"이메일로 프로필 만들기")+'</div>';
+      f+='<input id="liEmail" type="email" inputmode="email" placeholder="이메일 주소" class="lginput">';
+      if(fb){
+        f+='<input id="liPw" type="password" placeholder="비밀번호 (6자 이상)" class="lginput" style="margin-bottom:12px">';
+        f+='<div class="btnrow"><button class="btn primary" data-login="fbSignIn">로그인</button><button class="btn ghost" data-login="fbSignUp">회원가입</button></div>';
+        f+='<p class="muted" style="font-size:12px;margin-top:8px">클라우드 계정 — 다른 기기에서도 같은 기록으로 동기화됩니다.</p></div>';
+      } else {
+        f+='<input id="liName" type="text" placeholder="표시 이름 (선택)" class="lginput" style="margin-bottom:12px">';
+        f+='<button class="btn primary" data-login="emailGo">시작하기</button>';
+        f+='<p class="muted" style="font-size:12px;margin-top:8px">비밀번호 없는 로컬 프로필이에요(이 기기에만 저장). 같은 이메일로 다시 시작하면 기존 기록을 불러옵니다.</p></div>';
+      }
+      return f;
+    }
+    var fb=fbReady();
+    var h='<div class="hero" style="padding-top:40px;text-align:center"><div class="kword">KOREAN HISTORY · LEVEL 2</div><h2 style="margin-top:8px">한능검 2급<br>합격 마스터</h2><p>로그인하고 학습 기록을 저장하세요</p></div>';
+    h+='<div class="card">';
+    if(fb){ h+='<button class="btn ghost" data-login="google" style="margin-bottom:10px">🔵 Google로 로그인</button>'; }
+    else if(GOOGLE_CLIENT_ID){ h+='<div id="gsi" style="display:flex;justify-content:center;margin-bottom:10px"></div>'; }
+    else { h+='<button class="btn ghost" data-login="google" style="margin-bottom:10px">🔵 Google로 계속하기</button>'; }
+    h+='<button class="btn ghost" data-login="email" style="margin-bottom:10px">✉️ 이메일로 '+(fb?"로그인":"시작")+'</button>';
+    h+='<button class="btn primary" data-login="guest">👤 게스트로 바로 시작</button>';
+    h+='</div>';
+    h+='<p class="muted" style="font-size:12px;text-align:center;padding:0 16px">'+(fb?"로그인하면 여러 기기에서 기록이 동기화돼요(클라우드 저장).":"기록은 이 기기에 저장됩니다(오프라인 PWA). 게스트·이메일은 로컬 전용.")+'</p>';
+    return h;
+  }
+  function vAccount(){
+    var p=curProfile(), h=header("계정 · 설정","home");
+    var tl=p?(p.type==="google"?"Google":p.type==="email"?"이메일":"게스트"):"게스트";
+    h+='<div class="card"><div class="row"><div><div style="font-weight:800;font-size:16px">'+esc(p?p.name:"게스트")+'</div><div class="muted" style="font-size:12.5px">'+tl+(p&&p.email?(" · "+esc(p.email)):"")+'</div></div><span class="pill gold">현재</span></div></div>';
+    h+='<div class="card"><div style="font-weight:800;margin-bottom:8px">글자 크기</div><div class="areachips">';
+    var fs=load("hg2_font","md");
+    [["sm","작게"],["md","보통"],["lg","크게"]].forEach(function(o){ h+='<button class="chip'+(fs===o[0]?" on":"")+'" data-fontsize="'+o[0]+'">'+o[1]+'</button>'; });
+    h+='</div></div>';
+    h+='<div class="card"><div class="row"><div style="font-weight:800">화면 테마</div><button class="btn ghost sm" data-theme-toggle="1" style="width:auto;padding:8px 14px">'+(isDark()?"☀️ 라이트로":"🌙 다크로")+'</button></div></div>';
+    var ps=profiles();
+    if(ps.length>1){ h+='<div class="card"><div style="font-weight:800;margin-bottom:6px">프로필 전환</div>';
+      ps.forEach(function(x){ h+='<div class="list-item row"><div>'+esc(x.name)+' <span class="muted" style="font-size:12px">'+esc(x.email||x.type)+'</span></div>'+(x.id===curId()?'<span class="pill">현재</span>':'<button class="btn ghost sm" data-switch="'+x.id+'" style="width:auto;padding:6px 12px">전환</button>')+'</div>'; });
+      h+='</div>'; }
+    h+='<button class="btn ghost" data-logout="1">로그아웃</button>';
+    h+='<p class="muted" style="font-size:12px;text-align:center;margin-top:10px">기록은 이 기기에 프로필별로 저장돼요. 기기 간 동기화는 지원하지 않습니다.</p>';
+    return h;
+  }
+
+  // -------- STATS (약점 추적) --------
+  function statsAgg(){
+    var rs=results(), ba={};
+    rs.forEach(function(r){ var b=r.byArea||{}; Object.keys(b).forEach(function(a){ if(!ba[a])ba[a]=[0,0]; ba[a][0]+=b[a][0]; ba[a][1]+=b[a][1]; }); });
+    return ba;
+  }
+  function bar(c,t){ var pct=t?Math.round(c/t*100):0; var col=pct>=80?"var(--ok)":pct>=60?"var(--accent)":"var(--no)";
+    return '<div class="bw"><i style="width:'+pct+'%;background:'+col+'"></i></div><div class="pc" style="color:'+col+'">'+pct+'%</div>'; }
+  function vStats(){
+    var rs=results(), h=header("학습 통계",null);
+    if(!rs.length){ h+='<div class="card center" style="padding:30px 16px"><div style="font-size:30px">📊</div><div style="font-weight:800;margin-top:8px">아직 기록이 없어요</div><div class="muted" style="font-size:13px;margin:6px 0 14px">모의고사를 풀면 영역별 약점·점수 추이가 쌓입니다.</div><button class="btn primary" data-go="examList">모의고사 풀기</button></div>'; return h; }
+    var cs=rs.map(function(r){return r.correct;}), n=rs.length;
+    var avg=Math.round(cs.reduce(function(a,b){return a+b;},0)/n), best=Math.max.apply(null,cs), wn=Object.keys(wrongMap()).length;
+    h+='<div class="card"><div class="row"><div><div class="muted" style="font-size:12px">응시 '+n+'회</div><div style="font-weight:900;font-size:19px;margin-top:2px">평균 '+avg+'/50 · 최고 '+best+'/50</div></div><span class="gradeb '+gclass(gradeOf(avg).label)+'">평균 '+gradeOf(avg).label+'</span></div><div class="muted" style="font-size:12px;margin-top:6px">🔥 '+streakInfo().streak+'일 연속 · 누적 오답 '+wn+'개 · 2급 목표 40개</div></div>';
+    var ba=statsAgg(), eC=0,eT=0,tC=0,tT=0;
+    AREAS.forEach(function(a){var x=ba[a];if(!x)return;if(ERA.indexOf(a)>=0){eC+=x[0];eT+=x[1];}else{tC+=x[0];tT+=x[1];}});
+    h+='<div class="card"><div style="font-weight:800;margin-bottom:6px">시대 vs 주제</div>'+
+       '<div class="statrow"><div class="nm">시대</div>'+bar(eC,eT)+'</div>'+
+       '<div class="statrow"><div class="nm">주제</div>'+bar(tC,tT)+'</div></div>';
+    var areas=AREAS.filter(function(a){return ba[a]&&ba[a][1]>0;}).sort(function(a,b){return (ba[a][0]/ba[a][1])-(ba[b][0]/ba[b][1]);});
+    h+='<div class="card"><div style="font-weight:800;margin-bottom:6px">영역별 정답률 <span class="muted" style="font-size:12px">(약점순 · 탭하면 연습)</span></div>';
+    areas.forEach(function(a){ h+='<div class="statrow" data-practice-area="'+a+'" style="cursor:pointer"><div class="nm">'+esc(a)+'</div>'+bar(ba[a][0],ba[a][1])+'</div>'; });
+    h+='</div>';
+    var weak=areas.slice(0,3);
+    if(weak.length){ h+='<div class="card" style="border-color:var(--no)"><div style="font-weight:800;margin-bottom:8px;color:var(--no)">⚠ 취약 영역 — 집중 연습 추천</div>';
+      weak.forEach(function(a){ var pct=Math.round(ba[a][0]/ba[a][1]*100); h+='<div class="list-item row"><div>'+esc(a)+' <span class="muted" style="font-size:12px">'+ba[a][0]+'/'+ba[a][1]+' · '+pct+'%</span></div><button class="btn gold sm" data-practice-area="'+a+'" style="width:auto;padding:7px 14px">연습</button></div>'; });
+      h+='</div>'; }
+    h+='<div class="card"><div style="font-weight:800;margin-bottom:6px">최근 응시</div>';
+    rs.slice().reverse().slice(0,8).forEach(function(r){ var g=gradeOf(r.correct), dt=new Date(r.date), ds=(dt.getMonth()+1)+'/'+dt.getDate();
+      h+='<div class="list-item row"><div>'+esc(String(r.exam))+'회 <span class="muted" style="font-size:12px">'+ds+'</span></div><span class="gradeb '+gclass(g.label)+'" style="font-size:12px">'+r.correct+'/'+r.total+' · '+g.label+'</span></div>'; });
+    h+='</div>';
     return h;
   }
 
@@ -438,6 +716,22 @@
     app.querySelectorAll("[data-theme-toggle]").forEach(function(e){e.onclick=toggleTheme;});
     app.querySelectorAll("[data-nav]").forEach(function(e){e.onclick=function(){go(e.getAttribute("data-nav"));};});
     app.querySelectorAll("[data-tile]").forEach(function(e){e.onclick=function(){var t=e.getAttribute("data-tile");go(t==="exam"?"examList":t==="practice"?"practiceSetup":t);};});
+    app.querySelectorAll("[data-ext]").forEach(function(e){e.onclick=function(){window.open(e.getAttribute("data-ext"),"_blank","noopener");};});
+    app.querySelectorAll("[data-practice-area]").forEach(function(e){e.onclick=function(){ startPractice(e.getAttribute("data-practice-area"), 10); };});
+    app.querySelectorAll("[data-login]").forEach(function(e){e.onclick=function(){ doLogin(e.getAttribute("data-login")); };});
+    app.querySelectorAll("[data-q]").forEach(function(e){e.onclick=function(){ S.viewQ=e.getAttribute("data-q"); S.qBack=e.getAttribute("data-qback")||"search"; go("question"); };});
+    app.querySelectorAll("[data-bm]").forEach(function(e){e.onclick=function(ev){ ev.stopPropagation(); var on=toggleBm(e.getAttribute("data-bm")); e.textContent=(S.view==="question")?(on?"⭐ 북마크됨":"☆ 북마크"):(on?"⭐":"☆"); toast(on?"북마크 추가":"북마크 해제"); };});
+    var dse=app.querySelector("[data-dosearch]"); if(dse) dse.onclick=function(){ var el=document.getElementById("homeSearch"); S.searchQ=el?el.value:""; go("search"); };
+    var dse2=app.querySelector("[data-dosearch2]"); if(dse2) dse2.onclick=function(){ var el=document.getElementById("sq"); S.searchQ=el?el.value:""; render(); };
+    var shb=app.querySelector("[data-share]"); if(shb) shb.onclick=shareResult;
+    var imgB=app.querySelector("[data-img]"); if(imgB) imgB.onclick=saveResultImage;
+    var hsEl=document.getElementById("homeSearch"); if(hsEl) hsEl.onkeydown=function(ev){ if(ev.key==="Enter"){ S.searchQ=hsEl.value; go("search"); } };
+    var sqEl=document.getElementById("sq"); if(sqEl) sqEl.onkeydown=function(ev){ if(ev.key==="Enter"){ S.searchQ=sqEl.value; render(); } };
+    app.querySelectorAll("[data-fontsize]").forEach(function(e){e.onclick=function(){ setFont(e.getAttribute("data-fontsize")); };});
+    app.querySelectorAll("[data-switch]").forEach(function(e){e.onclick=function(){ setCur(e.getAttribute("data-switch")); go("home"); };});
+    var loBtn=app.querySelector("[data-logout]"); if(loBtn) loBtn.onclick=function(){ if(fbReady()&&S.fbUid){ try{HG2SYNC.signOut();}catch(e){} } S.fbUid=null; setCur(null); S.loginMode=null; go("login"); };
+    var lbBtn=app.querySelector("[data-loginback]"); if(lbBtn) lbBtn.onclick=function(){ S.loginMode=null; render(); };
+    if(S.view==="login") setupGoogle();
     app.querySelectorAll("[data-exam]").forEach(function(e){e.onclick=function(){startExam(e.getAttribute("data-exam"));};});
     var ib=document.getElementById("installBtn"); if(ib) ib.onclick=function(){ if(deferredPrompt){deferredPrompt.prompt();deferredPrompt=null;} };
 
@@ -467,13 +761,13 @@
     }
     if(S.view==="wrong"){
       var wr=app.querySelector("[data-wrongreview]"); if(wr) wr.onclick=startWrongReview;
-      var cw=app.querySelector("[data-clearwrong]"); if(cw) cw.onclick=function(){ if(confirm("오답노트를 모두 비울까요?")){ save("hg2_wrong",{}); render(); } };
+      var cw=app.querySelector("[data-clearwrong]"); if(cw) cw.onclick=function(){ if(confirm("오답노트를 모두 비울까요?")){ save(pkey("wrong"),{}); render(); } };
     }
   }
   function recordPractice(){
     var q=S.questions[S.idx], ch=S.answers[S.idx], wm=wrongMap();
     if(ch===q.answer){ delete wm[q.src]; } else { wm[q.src]={area:q.area,exam:q.exam,n:q.n,q:q.q,ans:q.answer,chosen:ch,t:Date.now()}; }
-    save("hg2_wrong",wm);
+    save(pkey("wrong"),wm);
   }
 
   // theme (다크모드)
@@ -486,9 +780,12 @@
   if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){ navigator.serviceWorker.register("./sw.js").catch(function(){}); }
 
   // boot
+  migrateLegacy();
   applyTheme();
+  applyFont();
+  if(window.HG2SYNC){ HG2SYNC.onUser(onFbUser); HG2SYNC.onReady(function(){ if(S.view==="login") render(); }); }
   if(!ALL.length){ app.innerHTML='<div class="card" style="margin-top:40px"><b>데이터를 불러오지 못했습니다.</b><div class="muted" style="font-size:13px;margin-top:6px">data/exam-1~5.js 파일이 같은 폴더에 있어야 합니다. 로컬 서버 또는 설치 환경에서 열어 주세요.</div></div>'; }
-  else render();
+  else { if(!curProfile()) S.view="login"; render(); }
 })();
 </script>
 </body>
