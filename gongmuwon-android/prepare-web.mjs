@@ -7,7 +7,7 @@
  * 결과물 www/ 는 빌드 산출물이라 git 에 올리지 않습니다(.gitignore).
  * 실행: node prepare-web.mjs   (또는 npm run prepare:web)
  */
-import { mkdirSync, rmSync, copyFileSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, rmSync, copyFileSync, readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -30,12 +30,11 @@ for (const f of ["bank.js", "adapter.js"]) {
   copyFileSync(join(app, "data", f), join(wwwData, f));
 }
 
-// 3) 모의고사 1~20회 복사
+// 3) 모의고사 데이터 복사 (exam-*.js 전부 자동 포함)
 let examCount = 0;
-for (let i = 1; i <= 20; i++) {
-  const src = join(docsData, `exam-${i}.js`);
-  if (existsSync(src)) { copyFileSync(src, join(wwwData, `exam-${i}.js`)); examCount++; }
-}
+readdirSync(docsData)
+  .filter(function (f) { return /^exam-\d+\.js$/.test(f); })
+  .forEach(function (f) { copyFileSync(join(docsData, f), join(wwwData, f)); examCount++; });
 
 // 4) index.html 경로 정리: ../docs/data → ./data (자체 포함)
 const idxPath = join(www, "index.html");
