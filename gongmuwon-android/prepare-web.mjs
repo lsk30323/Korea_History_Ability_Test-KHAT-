@@ -29,6 +29,15 @@ for (const f of ["index.html", "app.js", "styles.css"]) {
 for (const f of ["bank.js", "adapter.js"]) {
   copyFileSync(join(app, "data", f), join(wwwData, f));
 }
+// 시대별 예상문제 뱅크(data/era/*.js) 복사
+const eraSrc = join(app, "data", "era");
+if (existsSync(eraSrc)) {
+  const eraDst = join(wwwData, "era");
+  mkdirSync(eraDst, { recursive: true });
+  readdirSync(eraSrc)
+    .filter(function (f) { return f.endsWith(".js"); })
+    .forEach(function (f) { copyFileSync(join(eraSrc, f), join(eraDst, f)); });
+}
 
 // 3) 모의고사 데이터 복사 (exam-*.js 전부 자동 포함)
 let examCount = 0;
