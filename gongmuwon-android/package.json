@@ -8,6 +8,7 @@
     "sync": "npm run prepare:web && cap sync android",
     "build:apk": "npm run sync && cd android && ./gradlew assembleDebug",
     "build:aab": "npm run sync && cd android && ./gradlew bundleRelease",
+    "assets": "capacitor-assets generate --android --iconBackgroundColor #1e3a5f --iconBackgroundColorDark #10213a --splashBackgroundColor #1e3a5f --splashBackgroundColorDark #10213a",
     "open:android": "npm run prepare:web && cap open android",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+// 릴리스 서명 설정 로딩.
+// - 로컬: android/keystore.properties (git 에 올리지 않음) 에서 읽음
+// - CI: 환경 변수(KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD)에서 읽음
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasKeystoreProps = keystorePropertiesFile.exists()
+if (hasKeystoreProps) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+def signingStoreFile = hasKeystoreProps ? keystoreProperties['storeFile'] : System.getenv("KEYSTORE_FILE")
+def signingStorePassword = hasKeystoreProps ? keystoreProperties['storePassword'] : System.getenv("KEYSTORE_PASSWORD")
+def signingKeyAlias = hasKeystoreProps ? keystoreProperties['keyAlias'] : System.getenv("KEY_ALIAS")
+def signingKeyPassword = hasKeystoreProps ? keystoreProperties['keyPassword'] : System.getenv("KEY_PASSWORD")
+def hasReleaseSigning = signingStoreFile != null && !signingStoreFile.toString().isEmpty()
+
 android {
     namespace = "kr.co.vaultlife.khat.gongmuwon"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +31,24 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(signingStoreFile)
+                storePassword signingStorePassword
+                keyAlias signingKeyAlias
+                keyPassword signingKeyPassword
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // 서명 정보가 있을 때만 릴리스 서명 적용(없으면 디버그 빌드는 영향 없음)
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
