@@ -15,6 +15,25 @@ def signingKeyAlias = hasKeystoreProps ? keystoreProperties['keyAlias'] : System
 def signingKeyPassword = hasKeystoreProps ? keystoreProperties['keyPassword'] : System.getenv("KEY_PASSWORD")
 def hasReleaseSigning = signingStoreFile != null && !signingStoreFile.toString().isEmpty()
 
+// versionCode 자동 증가.
+// 우선순위: 환경 변수 VERSION_CODE > git 전체 커밋 수 > 1.
+// git 커밋 수는 커밋이 쌓일수록 단조 증가하므로 새 빌드마다 자동으로 올라갑니다.
+def computeVersionCode = {
+    def env = System.getenv("VERSION_CODE")
+    if (env != null && env.trim()) { return env.trim().toInteger() }
+    try {
+        def p = ["git", "rev-list", "--count", "HEAD"].execute(null, rootProject.rootDir)
+        p.waitFor()
+        def n = p.in.text.trim()
+        if (n) { return n.toInteger() }
+    } catch (Exception e) { logger.warn("versionCode: git count 실패, 기본값 사용 (${e.message})") }
+    return 1
+}
+def computeVersionName = {
+    def env = System.getenv("VERSION_NAME")
+    return (env != null && env.trim()) ? env.trim() : "1.0"
+}
+
 android {
     namespace = "kr.co.vaultlife.khat.gongmuwon"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -22,8 +41,8 @@ android {
         applicationId "kr.co.vaultlife.khat.gongmuwon"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode computeVersionCode()
+        versionName computeVersionName()
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

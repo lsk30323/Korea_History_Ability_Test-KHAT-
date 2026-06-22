@@ -83,8 +83,16 @@ npm run build:aab
    개인정보 처리방침, 데이터 보안 양식 작성
 5. 검토 제출
 
-> 참고: 버전을 올릴 때마다 `android/app/build.gradle` 의 `versionCode` 를 1씩 증가,
-> `versionName` 도 함께 갱신해야 합니다. (현재 versionCode 1 / versionName "1.0")
+> 참고: `versionCode` 는 **자동 증가**합니다 — git 전체 커밋 수를 사용하므로 새 커밋이
+> 쌓일 때마다 값이 올라갑니다. 특정 값을 강제하려면 환경 변수 `VERSION_CODE`(숫자),
+> 표시 버전을 바꾸려면 `VERSION_NAME`(예: 1.1)을 빌드 시 지정하세요.
+> (예: `VERSION_NAME=1.1 npm run build:aab`)
+
+## 스토어 등록 그래픽
+
+`gongmuwon-android/assets/store/` 에 미리 만들어 두었습니다.
+- `play-icon-512.png` — 앱 아이콘 512×512 (Play Console "앱 아이콘")
+- `feature-graphic-1024x500.png` — 피처 그래픽 1024×500 (Play Console "그래픽 이미지")
 
 ---
 
